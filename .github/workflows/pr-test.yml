@@ -32,15 +32,19 @@ jobs:
                   node-version: '20'
             - run: npm install
             - name: Run live tests
-              run: npm run test:live
-              continue-on-error: true # Allows the workflow to continue even if this step fails
+              id: live-tests
+              run: |
+                  if ! npm run test:live; then
+                    echo "LIVE_TESTS_FAILED=true" >> $GITHUB_ENV
+                  fi
+              continue-on-error: true
               env:
                   ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
                   INFURA_GOERLI_RPC: ${{ secrets.INFURA_GOERLI_RPC }}
                   TEST_WALLET_PRIVATE_KEY: ${{ secrets.TEST_WALLET_PRIVATE_KEY }}
 
             - name: Post comment if live tests fail
-              if: steps.live-tests.outcome == 'failure'
+              if: env.LIVE_TESTS_FAILED == 'true'
               uses: actions/github-script@v6
               with:
                   github-token: ${{secrets.GITHUB_TOKEN}}
